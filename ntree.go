@@ -1,4 +1,4 @@
-// Package ntree provides an idiomatic golang port of glib(Gnome)'s GNode N-ary tree
+// Package ntree provides an idiomatic golang port of glib(Gnome)'s GNode N-ary tree https://developer.gnome.org/glib/stable/glib-N-ary-Trees.html
 package ntree
 
 import (
