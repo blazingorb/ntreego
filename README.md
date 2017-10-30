@@ -1,5 +1,6 @@
-# ntreego
-Golang N-ary Tree Implementation.  Roughly ported from glib's GNode
+# ntreego, Not Production Ready, Pull Requests Welcomed!  (Need better tests)
+Golang N-ary Tree Implementation.  Roughly ported from glib's GNode.
+
 
 ```go
 root := ntree.New("A")
