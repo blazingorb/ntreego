@@ -155,7 +155,7 @@ func FindNode(root *Node, order TraverseType, flags TraverseFlags, data interfac
 
 func nodeFindFunc(n *Node, data interface{}) bool {
 	nPtr := data.(*NodeVal)
-	if nPtr.Value != n.Value {
+	if n.Value != nPtr.Value {
 		return false
 	}
 
@@ -366,24 +366,21 @@ func (n *Node) String() string {
 	levels := make([]string, 0, 10)
 	levels = append(levels, "")
 	tFunc := func(node *Node, value interface{}) bool {
-		if node.Parent == n && currentLevel > 0 {
-			//we started over from the top
-			currentLevel = 1
-		}
-		if node.Parent == lastNode {
-			//we moved down a node
+		currentLevel = 0
+		n := node.Parent
+		for n != nil {
 			currentLevel++
 			if len(levels) <= currentLevel {
 				levels = append(levels, "")
 			}
+			n = n.Parent
 		}
 		levels[currentLevel] += fmt.Sprintf("(%v)", node.Value) + "\t"
-
 		lastNode = node
 		return false
 	}
 
-	traversePreOrder(n, 0, tFunc, nil)
+	Traverse(n, TraversePreOrder, TraverseAll, -1, tFunc, nil)
 	s := ""
 	for _, v := range levels {
 		s += v + "\n"
