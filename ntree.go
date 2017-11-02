@@ -31,7 +31,7 @@ type Node struct {
 	Children *Node
 }
 
-type NodeVal struct {
+type nodeVal struct {
 	Value         interface{}
 	NodeReference *Node
 }
@@ -147,14 +147,14 @@ func FindNode(root *Node, order TraverseType, flags TraverseFlags, data interfac
 		return nil
 	}
 
-	d := &NodeVal{Value: data}
+	d := &nodeVal{Value: data}
 	Traverse(root, order, flags, -1, nodeFindFunc, data)
 
 	return d.NodeReference
 }
 
 func nodeFindFunc(n *Node, data interface{}) bool {
-	nPtr := data.(*NodeVal)
+	nPtr := data.(*nodeVal)
 	if n.Value != nPtr.Value {
 		return false
 	}
@@ -383,7 +383,7 @@ func (n *Node) String() string {
 	Traverse(n, TraversePreOrder, TraverseAll, -1, tFunc, nil)
 	s := ""
 	for _, v := range levels {
-		s += v + "\n"
+		s += v + "\n\n"
 	}
 	return s
 }
