@@ -1,3 +1,4 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/blazingorb/ntreego)](https://goreportcard.com/report/github.com/blazingorb/ntreego)
 # ntreego Golang N-ary Tree Implementation.  Roughly ported from glib's GNode with idiomatic go
 Not Production Ready.  Pull Requests Welcomed!  (Need better tests!)
 
