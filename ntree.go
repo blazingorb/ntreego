@@ -256,7 +256,7 @@ func traverseInOrder(n *Node, flags TraverseFlags, traverseFunc TraverseFunc, da
 			return true
 		}
 
-		if (flags&TraverseNonLeaves != 0) && traverseFunc(n, data) { 
+		if (flags&TraverseNonLeaves != 0) && traverseFunc(n, data) {
 			return true
 		}
 
@@ -267,7 +267,7 @@ func traverseInOrder(n *Node, flags TraverseFlags, traverseFunc TraverseFunc, da
 				return true
 			}
 		}
-	} else if (flags&TraverseLeaves != 0) && traverseFunc(n, data) { 
+	} else if (flags&TraverseLeaves != 0) && traverseFunc(n, data) {
 		return true
 	}
 
