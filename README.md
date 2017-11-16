@@ -1,3 +1,4 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/blazingorb/ntreego)](https://goreportcard.com/report/github.com/blazingorb/ntreego)
 # ntreego Golang N-ary Tree Implementation.  Roughly ported from glib's GNode with idiomatic go
 Not Production Ready.  Pull Requests Welcomed!  (Need better tests!)
 
@@ -28,11 +29,11 @@ TraverseFlags:
 - TraverseLeaves
 - TraverseNonLeaves
 
-Depth is -1 to start at the root and 1->n for specified depths.  0 is root so is an invalid input
+[Depth] is -1 to start at the root and 1->n for specified depths.  0 is root so is an invalid input
 
-TraverseFunc is the function applied to each node that is traversed
+[TraverseFunc] is the function applied to each node that is traversed
 
-Data is anything that should be passed to each node, allowing for lamba's to capture functionality outside of the library's traversal functions.
+[Data] is anything that should be passed to each node, allowing for lambda's to capture functionality outside of the library's traversal functions.
 
 
 ```go
