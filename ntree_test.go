@@ -145,34 +145,40 @@ func TestGetRoot(t *testing.T) {
 		t.Error("root should be nil and depth should be 0 when ntree.GetRoot(nil) is called!")
 	}
 
-	root, depth = ntree.GetRoot(nodes["a_1"])
-	if root == nil {
-		t.Error("root == nil")
-	} else {
-		if root.Value != nodes["root"].Value {
-			t.Error("Mismatched root node!")
+	wrapperFunc := func(node *ntree.Node) {
+		root, depth = ntree.GetRoot(node)
+		if root == nil {
+			t.Error("root == nil")
+		} else {
+			if root.Value != nodes["root"].Value {
+				t.Error("Mismatched root node!")
+			}
+		}
+
+		if depth != ntree.Depth(node) {
+			t.Errorf("Depth of %s expected to be %d but return %d", node.Value.(*MockData).Id, ntree.Depth(node), depth)
 		}
 	}
 
-	if depth != ntree.Depth(nodes["a_1"]) {
-		t.Errorf("Depth of a_1 expected to be %d but return %d", ntree.Depth(nodes["a_1"]), depth)
-	}
+	wrapperFunc(nodes["root"])
+	wrapperFunc(nodes["a_1"])
+	wrapperFunc(nodes["a_1_1"])
 }
 
 func TestDepth(t *testing.T) {
-	m := GenerateTree()
-	if ntree.Depth(m["root"]) != 1 {
-		t.Error("Depth of root should be 1!")
+	nodes := GenerateTree()
+	depth := 0
+
+	wrapperFunc := func(node *ntree.Node, expectedLength int) {
+		depth = ntree.Depth(node)
+		if depth != expectedLength {
+			t.Errorf("Depth of %s expected to be %d but return %d", node.Value.(*MockData).Id, expectedLength, depth)
+		}
 	}
 
-	if ntree.Depth(m["a_1"]) != 2 {
-		t.Error("Depth of a_1 should be 2!")
-	}
-
-	if ntree.Depth(m["a_1_1"]) != 3 {
-		t.Error("Depth of a_1_1 should be 3!")
-	}
-
+	wrapperFunc(nodes["root"], 1)
+	wrapperFunc(nodes["a_1"], 2)
+	wrapperFunc(nodes["a_1_1"], 3)
 }
 
 func TestInsert(t *testing.T) {
@@ -243,21 +249,21 @@ func TestIsRoot(t *testing.T) {
 }
 
 func TestFindNode(t *testing.T) {
-	m := GenerateTree()
+	nodes := GenerateTree()
 
-	if ntree.FindNode(nil, ntree.TraverseInOrder, ntree.TraverseAll, m["a_1_1"].Value) != nil {
+	if ntree.FindNode(nil, ntree.TraverseInOrder, ntree.TraverseAll, nodes["a_1_1"].Value) != nil {
 		t.Error("Result should be nil when nil is passed as root argument!")
 	}
 
-	nodeFound := ntree.FindNode(m["root"], ntree.TraverseInOrder, ntree.TraverseAll, m["a_1_1"].Value)
+	nodeFound := ntree.FindNode(nodes["root"], ntree.TraverseInOrder, ntree.TraverseAll, nodes["a_1_1"].Value)
 
-	if nodeFound != m["a_1_1"] {
+	if nodeFound != nodes["a_1_1"] {
 		t.Error("Wrong node has be found!")
 	}
 
-	nodeFound = ntree.FindNode(m["a_1"], ntree.TraverseInOrder, ntree.TraverseAll, m["a_1_1"].Value)
+	nodeFound = ntree.FindNode(nodes["a_1"], ntree.TraverseInOrder, ntree.TraverseAll, nodes["a_1_1"].Value)
 
-	if nodeFound != m["a_1_1"] {
+	if nodeFound != nodes["a_1_1"] {
 		t.Error("Wrong node has be found!")
 	}
 }
@@ -273,7 +279,7 @@ func TestTraverseFail(t *testing.T) {
 		return false
 	}
 
-	wrappedFilterFunc := func(root *ntree.Node, order ntree.TraverseType, flag ntree.TraverseFlags, depth int, traverseFunc func(n *ntree.Node, data interface{}) bool) {
+	wrappedFailFunc := func(root *ntree.Node, order ntree.TraverseType, flag ntree.TraverseFlags, depth int, traverseFunc func(n *ntree.Node, data interface{}) bool) {
 		visitCount = 0
 		ntree.Traverse(root, order, flag, depth, traverseFunc, 0)
 
@@ -282,12 +288,12 @@ func TestTraverseFail(t *testing.T) {
 		}
 	}
 
-	wrappedFilterFunc(nil, ntree.TraversePreOrder, ntree.TraverseAll, depth_a_1_1, traverseFunc)
-	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, depth_a_1_1, nil)
-	wrappedFilterFunc(nodes["root"], ntree.TraverseLevelOrder+1, ntree.TraverseAll, depth_a_1_1, traverseFunc)
-	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseMask+1, depth_a_1_1, traverseFunc)
-	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, -2, traverseFunc)
-	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, 0, traverseFunc)
+	wrappedFailFunc(nil, ntree.TraversePreOrder, ntree.TraverseAll, depth_a_1_1, traverseFunc)
+	wrappedFailFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, depth_a_1_1, nil)
+	wrappedFailFunc(nodes["root"], ntree.TraverseLevelOrder+1, ntree.TraverseAll, depth_a_1_1, traverseFunc)
+	wrappedFailFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseMask+1, depth_a_1_1, traverseFunc)
+	wrappedFailFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, -2, traverseFunc)
+	wrappedFailFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, 0, traverseFunc)
 }
 func TestTraverseAll(t *testing.T) {
 	nodes := GenerateTree()
@@ -313,12 +319,12 @@ func TestTraverseAll(t *testing.T) {
 		if lastVisitedNode != expectedNode {
 			if lastVisitedNode != nil {
 				if expectedNode != nil {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return %s", expectedNode.Value.(*MockData).Id, lastVisitedNode.Value.(*MockData).Id)
 				} else {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be nil but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be nil but return %s", lastVisitedNode.Value.(*MockData).Id)
 				}
 			} else {
-				t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return nil")
+				t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return nil", expectedNode.Value.(*MockData).Id)
 			}
 		}
 	}
@@ -352,18 +358,18 @@ func TestTraverseAllwithConditions(t *testing.T) {
 		ntree.Traverse(nodes["root"], order, ntree.TraverseAll, depth, traverseFunc, 0)
 
 		if visitCount != expectedLength {
-			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+			t.Errorf("Traverse Error! The expected visit count should be %d but return %d", expectedLength, visitCount)
 		}
 
 		if lastVisitedNode != expectedNode {
 			if lastVisitedNode != nil {
 				if expectedNode != nil {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return %s", expectedNode.Value.(*MockData).Id, lastVisitedNode.Value.(*MockData).Id)
 				} else {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be nil but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be nil but return %s", lastVisitedNode.Value.(*MockData).Id)
 				}
 			} else {
-				t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return nil")
+				t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return nil", expectedNode.Value.(*MockData).Id)
 			}
 		}
 	}
@@ -397,18 +403,18 @@ func TestTraverseLeaves(t *testing.T) {
 		ntree.Traverse(nodes["root"], order, ntree.TraverseLeaves, depth, traverseFunc, 0)
 
 		if visitCount != expectedLength {
-			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+			t.Errorf("Traverse Error! The expected visit count should be %d but return %d", expectedLength, visitCount)
 		}
 
 		if lastVisitedNode != expectedNode {
 			if lastVisitedNode != nil {
 				if expectedNode != nil {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return %s", expectedNode.Value.(*MockData).Id, lastVisitedNode.Value.(*MockData).Id)
 				} else {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be nil but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be nil but return %s", lastVisitedNode.Value.(*MockData).Id)
 				}
 			} else {
-				t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return nil")
+				t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return nil", expectedNode.Value.(*MockData).Id)
 			}
 		}
 	}
@@ -442,18 +448,18 @@ func TestTraverseLeavesWithConditions(t *testing.T) {
 		ntree.Traverse(nodes["root"], order, ntree.TraverseLeaves, depth, traverseFunc, 0)
 
 		if visitCount != expectedLength {
-			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+			t.Errorf("Traverse Error! The expected visit count should be %d but return %d", expectedLength, visitCount)
 		}
 
 		if lastVisitedNode != expectedNode {
 			if lastVisitedNode != nil {
 				if expectedNode != nil {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return %s", expectedNode.Value.(*MockData).Id, lastVisitedNode.Value.(*MockData).Id)
 				} else {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be nil but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be nil but return %s", lastVisitedNode.Value.(*MockData).Id)
 				}
 			} else {
-				t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return nil")
+				t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return nil", expectedNode.Value.(*MockData).Id)
 			}
 		}
 	}
@@ -487,18 +493,18 @@ func TestTraverseNonLeaves(t *testing.T) {
 		ntree.Traverse(nodes["root"], order, ntree.TraverseNonLeaves, depth, traverseFunc, 0)
 
 		if visitCount != expectedLength {
-			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+			t.Errorf("Traverse Error! The expected visit count should be %d but return %d", expectedLength, visitCount)
 		}
 
 		if lastVisitedNode != expectedNode {
 			if lastVisitedNode != nil {
 				if expectedNode != nil {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return %s", expectedNode.Value.(*MockData).Id, lastVisitedNode.Value.(*MockData).Id)
 				} else {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be nil but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be nil but return %s", lastVisitedNode.Value.(*MockData).Id)
 				}
 			} else {
-				t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return nil")
+				t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return nil", expectedNode.Value.(*MockData).Id)
 			}
 		}
 	}
@@ -532,18 +538,18 @@ func TestTraverseNonLeavesWithCondistions(t *testing.T) {
 		ntree.Traverse(nodes["root"], order, ntree.TraverseNonLeaves, depth, traverseFunc, 0)
 
 		if visitCount != expectedLength {
-			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+			t.Errorf("Traverse Error! The expected visit count should be %d but return %d", expectedLength, visitCount)
 		}
 
 		if lastVisitedNode != expectedNode {
 			if lastVisitedNode != nil {
 				if expectedNode != nil {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return %s", expectedNode.Value.(*MockData).Id, lastVisitedNode.Value.(*MockData).Id)
 				} else {
-					t.Error("Traverse Error! The expected node that traverseFunc last visited should be nil but return", lastVisitedNode.Value.(*MockData).Id)
+					t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be nil but return %s", lastVisitedNode.Value.(*MockData).Id)
 				}
 			} else {
-				t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return nil")
+				t.Errorf("Traverse Error! The expected node that traverseFunc last visited should be %s but return nil", expectedNode.Value.(*MockData).Id)
 			}
 		}
 	}
