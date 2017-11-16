@@ -133,7 +133,7 @@ func GetRoot(n *Node) (*Node, int) {
 		return nil, 0
 	}
 
-	depth := 0
+	depth := 1
 
 	current := n
 	for current.Parent != nil {

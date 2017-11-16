@@ -108,11 +108,11 @@ func TestNodeCount(t *testing.T) {
 }
 
 func TestUnlink(t *testing.T) {
-	m := GenerateTree()
+	nodes := GenerateTree()
 
 	ntree.Unlink(nil)
 
-	if ntree.NodeCount(m["root"], ntree.TraverseAll) != len(m) {
+	if ntree.NodeCount(nodes["root"], ntree.TraverseAll) != len(nodes) {
 		t.Error("NodeCount should remained the same when calling ntree.Unlink(nil)")
 	}
 
@@ -122,32 +122,40 @@ func TestUnlink(t *testing.T) {
 			t.Error("Incomplete unlink!")
 		}
 
-		for _, node := range m {
+		if ntree.FindNode(nodes["root"], ntree.TraverseInOrder, ntree.TraverseAll, n.Value) != nil {
+			t.Error("Incomplete unlink!")
+		}
+
+		for _, node := range nodes {
 			if node.Children == n || node.Previous == n || node.Next == n {
 				t.Error("Incomplete unlink!")
 			}
 		}
 	}
 
-	wrapperFunc(m["a_1"])
-	wrapperFunc(m["a_2_2"])
+	wrapperFunc(nodes["a_1"])
+	wrapperFunc(nodes["a_2_2"])
 
 }
 
 func TestGetRoot(t *testing.T) {
-	m := GenerateTree()
+	nodes := GenerateTree()
 	root, depth := ntree.GetRoot(nil)
 	if root != nil || depth != 0 {
 		t.Error("root should be nil and depth should be 0 when ntree.GetRoot(nil) is called!")
 	}
 
-	root, _ = ntree.GetRoot(m["a_1"])
+	root, depth = ntree.GetRoot(nodes["a_1"])
 	if root == nil {
 		t.Error("root == nil")
 	} else {
-		if root.Value != m["root"].Value {
+		if root.Value != nodes["root"].Value {
 			t.Error("Mismatched root node!")
 		}
+	}
+
+	if depth != ntree.Depth(nodes["a_1"]) {
+		t.Errorf("Depth of a_1 expected to be %d but return %d", ntree.Depth(nodes["a_1"]), depth)
 	}
 }
 
@@ -246,9 +254,15 @@ func TestFindNode(t *testing.T) {
 	if nodeFound != m["a_1_1"] {
 		t.Error("Wrong node has be found!")
 	}
+
+	nodeFound = ntree.FindNode(m["a_1"], ntree.TraverseInOrder, ntree.TraverseAll, m["a_1_1"].Value)
+
+	if nodeFound != m["a_1_1"] {
+		t.Error("Wrong node has be found!")
+	}
 }
 
-func TestTraverseFilter(t *testing.T) {
+func TestTraverseFail(t *testing.T) {
 	nodes := GenerateTree()
 	visitCount := 0
 	depth_a_1_1 := ntree.Depth(nodes["a_1_1"])
@@ -264,7 +278,7 @@ func TestTraverseFilter(t *testing.T) {
 		ntree.Traverse(root, order, flag, depth, traverseFunc, 0)
 
 		if visitCount != 0 {
-			t.Error("Traverse Error! Visit count should be zero when argument meets the filter condition!")
+			t.Error("Traverse Error! Visit count should be zero when argument meets the fail condition!")
 		}
 	}
 
@@ -278,7 +292,7 @@ func TestTraverseFilter(t *testing.T) {
 func TestTraverseAll(t *testing.T) {
 	nodes := GenerateTree()
 	visitCount := 0
-	var lastVisitedNode *ntree.Node = nil
+	var lastVisitedNode *ntree.Node
 
 	traverseFunc := func(n *ntree.Node, data interface{}) bool {
 		visitCount++
@@ -293,7 +307,7 @@ func TestTraverseAll(t *testing.T) {
 		ntree.Traverse(nodes["root"], order, ntree.TraverseAll, depth, traverseFunc, 0)
 
 		if visitCount != expectedLength {
-			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+			t.Errorf("Traverse Error! The expected visit count should be %d but return %d", expectedLength, visitCount)
 		}
 
 		if lastVisitedNode != expectedNode {
@@ -544,83 +558,3 @@ func TestTraverseNonLeavesWithCondistions(t *testing.T) {
 	wrappedFunc(ntree.TraversePostOrder, 2, nodes["a_1"], 1)
 	//wrappedFunc(ntree.TraverseLevelOrder, 2)
 }
-
-// func TestFindRoot(t *testing.T) {
-// 	_, node := GenerateTree()
-// 	t.Log("\n", ntree.GetRoot(node).Value)
-// }
-
-// func TestTreeFindParentNode(t *testing.T) {
-// 	type Mock struct {
-// 		Id    string
-// 		Value int
-// 	}
-
-// 	root := ntree.NewWithValue(&Mock{"armor", 0})
-// 	child1 := ntree.NewWithValue(&Mock{"a_1", 1})
-// 	child2 := ntree.NewWithValue(&Mock{"a_2", 1})
-
-// 	child1_1 := ntree.NewWithValue(&Mock{"a_1_1", 2})
-// 	child1_2 := ntree.NewWithValue(&Mock{"a_1_2", 2})
-// 	child1_3 := ntree.NewWithValue(&Mock{"a_1_3", 2})
-
-// 	child2_1 := ntree.NewWithValue(&Mock{"a_2_1", 2})
-// 	child2_2 := ntree.NewWithValue(&Mock{"a_2_2", 2})
-
-// 	ntree.InsertChild(root, child1)
-// 	ntree.InsertChild(root, child2)
-
-// 	ntree.InsertChild(child1, child1_1)
-// 	ntree.InsertChild(child1, child1_2)
-// 	ntree.InsertChild(child1, child1_3)
-
-// 	ntree.InsertChild(child2, child2_1)
-// 	ntree.InsertChild(child2, child2_2)
-
-// 	// s := ntree.FindParent(root, child1_1)
-// 	// if s == nil {
-// 	// 	t.Error("Node Not Found: ", s)
-// 	// 	return
-// 	// }
-
-// 	// t.Log("\n" + root.String())
-// 	// t.Log("Found Val: ", s.Value)
-// }
-
-// func TestTreeHasPath(t *testing.T) {
-// 	type Mock struct {
-// 		Id    string
-// 		Value int
-// 	}
-
-// 	root := ntree.NewWithValue(&Mock{"armor", 0})
-// 	child1 := ntree.NewWithValue(&Mock{"a_1", 1})
-// 	child2 := ntree.NewWithValue(&Mock{"a_2", 1})
-
-// 	child1_1 := ntree.NewWithValue(&Mock{"a_1_1", 2})
-// 	child1_2 := ntree.NewWithValue(&Mock{"a_1_2", 2})
-// 	child1_3 := ntree.NewWithValue(&Mock{"a_1_3", 2})
-
-// 	child2_1 := ntree.NewWithValue(&Mock{"a_2_1", 2})
-// 	child2_2 := ntree.NewWithValue(&Mock{"a_2_2", 2})
-
-// 	ntree.InsertChild(root, child1)
-// 	ntree.InsertChild(root, child2)
-
-// 	ntree.InsertChild(child1, child1_1)
-// 	ntree.InsertChild(child1, child1_2)
-// 	ntree.InsertChild(child1, child1_3)
-
-// 	ntree.InsertChild(child2, child2_1)
-// 	ntree.InsertChild(child2, child2_2)
-// 	t.Log("\n" + root.String())
-
-// 	result := make([]*ntree.NTree, 0)
-// 	ntree.HasPath(root, child2_2, &result)
-
-// 	t.Log("Path Length: ", len(result))
-// 	for _, r := range result {
-// 		t.Log(r.Value)
-// 	}
-
-// }
