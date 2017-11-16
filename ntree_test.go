@@ -80,6 +80,13 @@ func TestTreeModify(t *testing.T) {
 	}
 
 	ntree.Traverse(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, -1, addFunc, 5)
+
+	for _, node := range nodes {
+		if node.Value.(*MockData).Value != 5 {
+			t.Error("Value of node is wrong!")
+		}
+	}
+
 	str := nodes["root"].String()
 	fmt.Println(str)
 }
@@ -90,6 +97,302 @@ func TestNodeCount(t *testing.T) {
 	if count != len(nodes) {
 		t.Error("Mismatched node count!")
 	}
+
+	if ntree.NodeCount(nil, ntree.TraverseAll) != 0 {
+		t.Error("NodeCount should be zero when the tree assigned is nil!")
+	}
+
+	if ntree.NodeCount(nodes["root"], ntree.TraverseMask+1) != 0 {
+		t.Error("NodeCount should be zero when flags is larger than TraverseMask")
+	}
+}
+
+func TestUnlink(t *testing.T) {
+	m := GenerateTree()
+
+	ntree.Unlink(nil)
+
+	if ntree.NodeCount(m["root"], ntree.TraverseAll) != len(m) {
+		t.Error("NodeCount should remained the same when calling ntree.Unlink(nil)")
+	}
+
+	wrapperFunc := func(n *ntree.Node) {
+		ntree.Unlink(n)
+		if n.Parent != nil || n.Previous != nil || n.Next != nil {
+			t.Error("Incomplete unlink!")
+		}
+
+		for _, node := range m {
+			if node.Children == n || node.Previous == n || node.Next == n {
+				t.Error("Incomplete unlink!")
+			}
+		}
+	}
+
+	wrapperFunc(m["a_1"])
+	wrapperFunc(m["a_2_2"])
+
+}
+
+func TestGetRoot(t *testing.T) {
+	m := GenerateTree()
+	root, depth := ntree.GetRoot(nil)
+	if root != nil || depth != 0 {
+		t.Error("root should be nil and depth should be 0 when ntree.GetRoot(nil) is called!")
+	}
+
+	root, _ = ntree.GetRoot(m["a_1"])
+	if root == nil {
+		t.Error("root == nil")
+	} else {
+		if root.Value != m["root"].Value {
+			t.Error("Mismatched root node!")
+		}
+	}
+}
+
+func TestDepth(t *testing.T) {
+	m := GenerateTree()
+	if ntree.Depth(m["root"]) != 1 {
+		t.Error("Depth of root should be 1!")
+	}
+
+	if ntree.Depth(m["a_1"]) != 2 {
+		t.Error("Depth of a_1 should be 2!")
+	}
+
+	if ntree.Depth(m["a_1_1"]) != 3 {
+		t.Error("Depth of a_1_1 should be 3!")
+	}
+
+}
+
+func TestInsert(t *testing.T) {
+	nodes := GenerateTree()
+	a_1 := nodes["a_1"]
+	a_2 := nodes["a_2"]
+	a_2_1 := nodes["a_2_1"]
+
+	newNode := ntree.New(1)
+
+	if ntree.Insert(nil, newNode) != nil || ntree.Insert(nodes["root"], nil) != nil {
+		t.Error("Result should be nil when one of the arguments is nil")
+	}
+
+	if ntree.Insert(a_1, a_2) != nil {
+		t.Error("Result should be nil when a non-root node is inserted as a child of other node")
+	}
+
+	ntree.Insert(nodes["root"], newNode)
+	if a_2.Next != newNode || newNode.Previous != a_2 {
+		t.Error("newNode should be a sibling of a_2")
+	}
+
+	newNode2 := ntree.New(2)
+	ntree.Insert(a_2_1, newNode2)
+	if a_2_1.Children != newNode2 || newNode2.Parent != a_2_1 {
+		t.Error("newNode2 should be a child of a_2_1")
+	}
+}
+
+func TestAppendChild(t *testing.T) {
+	nodes := GenerateTree()
+	a_1 := nodes["a_1"]
+	a_2 := nodes["a_2"]
+	a_2_1 := nodes["a_2_1"]
+
+	newNode := ntree.New(1)
+
+	if ntree.AppendChild(nil, newNode) != nil || ntree.AppendChild(nodes["root"], nil) != nil {
+		t.Error("Result should be nil when one of the arguments is nil")
+	}
+
+	if ntree.AppendChild(a_1, a_2) != nil {
+		t.Error("Result should be nil when a non-root node is appended as a child of other node")
+	}
+
+	ntree.AppendChild(nodes["root"], newNode)
+	if a_2.Next != newNode || newNode.Previous != a_2 {
+		t.Error("newNode should be a sibling of a_2")
+	}
+
+	newNode2 := ntree.New(2)
+	ntree.AppendChild(a_2_1, newNode2)
+	if a_2_1.Children != newNode2 || newNode2.Parent != a_2_1 {
+		t.Error("newNode2 should be a child of a_2_1")
+	}
+}
+
+func TestIsRoot(t *testing.T) {
+	nodes := GenerateTree()
+	if !ntree.IsRoot(nodes["root"]) {
+		t.Error("Result should be true when root node is passed in")
+	}
+
+	if ntree.IsRoot(nodes["a_1"]) || ntree.IsRoot(nodes["a_2"]) {
+		t.Error("Result should be false when non-root nodes are passed in")
+	}
+}
+
+func TestFindNode(t *testing.T) {
+	m := GenerateTree()
+
+	if ntree.FindNode(nil, ntree.TraverseInOrder, ntree.TraverseAll, m["a_1_1"].Value) != nil {
+		t.Error("Result should be nil when nil is passed as root argument!")
+	}
+
+	nodeFound := ntree.FindNode(m["root"], ntree.TraverseInOrder, ntree.TraverseAll, m["a_1_1"].Value)
+
+	if nodeFound != m["a_1_1"] {
+		t.Error("Wrong node has be found!")
+	}
+}
+
+func TestTraverseFilter(t *testing.T) {
+	nodes := GenerateTree()
+	visitCount := 0
+	depth_a_1_1 := ntree.Depth(nodes["a_1_1"])
+
+	traverseFunc := func(n *ntree.Node, data interface{}) bool {
+		visitCount++
+		//Return true will stop Traverse Function from traversing other remained nodes
+		return false
+	}
+
+	wrappedFilterFunc := func(root *ntree.Node, order ntree.TraverseType, flag ntree.TraverseFlags, depth int, traverseFunc func(n *ntree.Node, data interface{}) bool) {
+		visitCount = 0
+		ntree.Traverse(root, order, flag, depth, traverseFunc, 0)
+
+		if visitCount != 0 {
+			t.Error("Traverse Error! Visit count should be zero when argument meets the filter condition!")
+		}
+	}
+
+	wrappedFilterFunc(nil, ntree.TraversePreOrder, ntree.TraverseAll, depth_a_1_1, traverseFunc)
+	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, depth_a_1_1, nil)
+	wrappedFilterFunc(nodes["root"], ntree.TraverseLevelOrder+1, ntree.TraverseAll, depth_a_1_1, traverseFunc)
+	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseMask+1, depth_a_1_1, traverseFunc)
+	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, -2, traverseFunc)
+	wrappedFilterFunc(nodes["root"], ntree.TraversePreOrder, ntree.TraverseAll, 0, traverseFunc)
+}
+func TestTraverseAll(t *testing.T) {
+	nodes := GenerateTree()
+	visitCount := 0
+	lastVisitedNode := nodes["root"]
+
+	traverseFunc := func(n *ntree.Node, data interface{}) bool {
+		visitCount++
+		lastVisitedNode = n
+		//Return true will stop Traverse Function from traversing other remained nodes
+		return false
+	}
+
+	wrappedFunc := func(order ntree.TraverseType, depth int, expectedNode *ntree.Node, expectedLength int) {
+		visitCount = 0
+		ntree.Traverse(nodes["root"], order, ntree.TraverseAll, depth, traverseFunc, 0)
+
+		if visitCount != expectedLength {
+			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+		}
+
+		if lastVisitedNode != expectedNode {
+			t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+		}
+	}
+
+	wrappedFunc(ntree.TraversePreOrder, -1, nodes["a_2_2"], len(nodes))
+	wrappedFunc(ntree.TraverseInOrder, -1, nodes["a_2_2"], len(nodes))
+	wrappedFunc(ntree.TraversePostOrder, -1, nodes["root"], len(nodes))
+	//wrappedFunc(ntree.TraverseLevelOrder, -1)
+
+	wrappedFunc(ntree.TraversePreOrder, 2, nodes["a_2"], 3)
+	wrappedFunc(ntree.TraverseInOrder, 2, nodes["a_2"], 3)
+	wrappedFunc(ntree.TraversePostOrder, 2, nodes["root"], 3)
+	//wrappedFunc(ntree.TraverseLevelOrder, 2)
+}
+
+func TestTraverseAllwithConditions(t *testing.T) {
+	nodes := GenerateTree()
+	visitCount := 0
+	lastVisitedNode := nodes["root"]
+
+	traverseFunc := func(n *ntree.Node, data interface{}) bool {
+		visitCount++
+		lastVisitedNode = n
+		//Return true will stop Traverse Function from traversing other remained nodes
+		return true
+	}
+
+	wrappedFunc := func(order ntree.TraverseType, depth int, expectedNode *ntree.Node, expectedLength int) {
+		visitCount = 0
+		ntree.Traverse(nodes["root"], order, ntree.TraverseAll, depth, traverseFunc, 0)
+
+		if visitCount != expectedLength {
+			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+		}
+
+		if lastVisitedNode != expectedNode {
+			t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+		}
+	}
+
+	wrappedFunc(ntree.TraversePreOrder, -1, nodes["root"], 1)
+	wrappedFunc(ntree.TraverseInOrder, -1, nodes["a_1_1"], 1)
+	wrappedFunc(ntree.TraversePostOrder, -1, nodes["a_1_1"], 1)
+	//wrappedFunc(ntree.TraverseLevelOrder, -1)
+
+	wrappedFunc(ntree.TraversePreOrder, 2, nodes["root"], 1)
+	wrappedFunc(ntree.TraverseInOrder, 2, nodes["a_1"], 1)
+	wrappedFunc(ntree.TraversePostOrder, 2, nodes["a_1"], 1)
+	//wrappedFunc(ntree.TraverseLevelOrder, depth_a_1_1)
+}
+
+func TestTraverseLeaves(t *testing.T) {
+	nodes := GenerateTree()
+	visitCount := 0
+	lastVisitedNode := nodes["root"]
+
+	traverseFunc := func(n *ntree.Node, data interface{}) bool {
+		visitCount++
+		lastVisitedNode = n
+		//Return true will stop Traverse Function from traversing other remained nodes
+		return false
+	}
+
+	wrappedFunc := func(order ntree.TraverseType, depth int, expectedNode *ntree.Node, expectedLength int) {
+		visitCount = 0
+		ntree.Traverse(nodes["root"], order, ntree.TraverseLeaves, depth, traverseFunc, 0)
+
+		if visitCount != expectedLength {
+			t.Error("Traverse Error! The expected visit count should be", expectedLength, "but return", visitCount)
+		}
+
+		if lastVisitedNode != expectedNode {
+			t.Error("Traverse Error! The expected node that traverseFunc last visited should be", expectedNode.Value.(*MockData).Id, "but return", lastVisitedNode.Value.(*MockData).Id)
+		}
+	}
+
+	wrappedFunc(ntree.TraversePreOrder, -1, nodes["a_2_2"], 5)
+	wrappedFunc(ntree.TraverseInOrder, -1, nodes["a_2_2"], 5)
+	wrappedFunc(ntree.TraversePostOrder, -1, nodes["root"], 5)
+	//wrappedFunc(ntree.TraverseLevelOrder, -1)
+
+	//wrappedFunc(ntree.TraversePreOrder, 2, nodes["a_2"], 3)
+	//wrappedFunc(ntree.TraverseInOrder, 2, nodes["a_2"], 3)
+	//wrappedFunc(ntree.TraversePostOrder, 2, nodes["root"], 3)
+	//wrappedFunc(ntree.TraverseLevelOrder, 2)
+}
+
+func TestTraverseLeavesWithConditions(t *testing.T) {
+
+}
+
+func TestTraverseNonLeaves(t *testing.T) {
+
+}
+
+func TestTraverseNonLeavesWithCondistions(t *testing.T) {
+
 }
 
 // func TestFindRoot(t *testing.T) {

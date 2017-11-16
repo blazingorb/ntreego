@@ -134,12 +134,14 @@ func GetRoot(n *Node) (*Node, int) {
 	}
 
 	depth := 0
-	for n.Parent != nil {
+
+	current := n
+	for current.Parent != nil {
 		depth++
-		n = n.Parent
+		current = current.Parent
 	}
 
-	return nil, depth
+	return current, depth
 }
 
 func FindNode(root *Node, order TraverseType, flags TraverseFlags, data interface{}) *Node {
@@ -148,7 +150,7 @@ func FindNode(root *Node, order TraverseType, flags TraverseFlags, data interfac
 	}
 
 	d := &nodeVal{Value: data}
-	Traverse(root, order, flags, -1, nodeFindFunc, data)
+	Traverse(root, order, flags, -1, nodeFindFunc, d)
 
 	return d.NodeReference
 }
