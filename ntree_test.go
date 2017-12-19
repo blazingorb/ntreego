@@ -12,6 +12,8 @@ type MockData struct {
 	Value int
 }
 
+var benchroot = GenerateBenchmarkTree(ntree.New(&MockData{"Root", 1}), 6, 12)
+
 func GenerateTree() map[string]*ntree.Node {
 	a_1 := &MockData{"a_1", 0}
 	a_2 := &MockData{"a_2", 0}
@@ -563,4 +565,31 @@ func TestTraverseNonLeavesWithCondistions(t *testing.T) {
 	wrappedFunc(ntree.TraverseInOrder, 2, nodes["a_1"], 1)
 	wrappedFunc(ntree.TraversePostOrder, 2, nodes["a_1"], 1)
 	//wrappedFunc(ntree.TraverseLevelOrder, 2)
+}
+
+func GenerateBenchmarkTree(parentNode *ntree.Node, depthLimit int, childCount int) *ntree.Node {
+	if ntree.Depth(parentNode) < depthLimit {
+		for i := 0; i < childCount; i++ {
+			childNode := ntree.New(&MockData{"Mock", 1})
+			ntree.AppendChild(parentNode, childNode)
+			GenerateBenchmarkTree(childNode, depthLimit, childCount)
+		}
+	}
+
+	return parentNode
+}
+
+func BenchmarkTreeTraverse(b *testing.B) {
+	counter := 0
+	traverseFunc := func(n *ntree.Node, value interface{}) bool {
+		counter++
+		return false
+	}
+
+	b.Logf("Node Count: %d \n", ntree.NodeCount(benchroot, ntree.TraverseAll))
+
+	for n := 0; n < b.N; n++ {
+		counter = 0
+		ntree.Traverse(benchroot, ntree.TraverseInOrder, ntree.TraverseAll, -1, traverseFunc, "Mock")
+	}
 }
